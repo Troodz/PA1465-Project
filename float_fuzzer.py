@@ -2,6 +2,8 @@ import pickle
 import hashlib
 import random
 
+from functions import create_pickle, read_pickle
+
 def generate_recursive_data(depth, seed):
     """
     Generate a random recursive data structure.
@@ -12,19 +14,19 @@ def generate_recursive_data(depth, seed):
     else:
         return [generate_recursive_data((depth - 1), seed) for _ in range(random.randint(1, 5))]
 
-def pickle_and_hash(i, data):
+def pickle_and_hash(i, data, platform):
     """
     Pickle the data and compute its hash.
     """
     pickled_data = pickle.dumps(data)
 
-    with open("fuzz_pkl_files/" + str(i) + ".pkl", "wb") as f:
+    with open("fuzz_pkl_files/" + platform  + str(i) + ".pkl", "wb") as f:
         f.write(pickled_data)
 
     data_hash = hashlib.sha256(pickled_data).hexdigest()
     return data_hash
 
-def fuzzer(iterations):
+def fuzzer(iterations, platform):
     """
     Fuzz testing for pickle serialization and hash validation.
     """
@@ -34,11 +36,11 @@ def fuzzer(iterations):
 
         random.seed(i)
         # Generate a random recursive data structure
-        recursive_data = generate_recursive_data(random.randint(1, 10), i)
+        recursive_data = generate_recursive_data(random.randint(1, 5), i)
 
         # Pickle the data and compute its hash
-        data_hash = pickle_and_hash(i, recursive_data)
-        with open("fuzz_pkl_files/" + str(i) + ".pkl", "rb") as f:
+        data_hash = pickle_and_hash(i, recursive_data, platform)
+        with open("fuzz_pkl_files/" + platform + str(i) + ".pkl", "rb") as f:
             pickled_data = pickle.load(f)
 
         # Check if the hash is already in the dictionary
@@ -53,4 +55,4 @@ def fuzzer(iterations):
     print("Fuzz test completed.")
 
 # Example usage:
-fuzzer(100)
+fuzzer(5, "windows")

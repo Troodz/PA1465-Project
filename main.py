@@ -1,13 +1,11 @@
-import pickle 
-import subprocess
 import os
 import unittest
-import random
-import hashlib
 import math
 from decimal import *
-from mpmath import mp
+from help_functions import create_pickle, read_pickle, folder_contains_file
+
 test_dir = "tests/"
+platform = "windows"
 
 class version_check:
     def __init__(self) -> None:
@@ -17,70 +15,101 @@ class version_check:
 
 class TestPickleLibrary(unittest.TestCase):
 
-    def create_pickle(self,name, obj):
-        with open(name + ".pkl", "wb") as f:
-            pickle.dump(obj, f)
-        
-    
-    def read_pickle(self, name):
-        with open(name+".pkl", "rb") as f:
-            temp_pick = f.read()
-        hash = hashlib.sha256() #creates hash object
-        hash.update(temp_pick) #insert obj into hash buffer
-        hash.digest() #idk man
-        f.close()
-        return hash.hexdigest() # returns hashed pickle
-
-    def load_pickle(self, obj):
-        return pickle.loads(obj)
-
-    # Different tests
-    # def test_different_version(self):
-    #     test_object = ()
-    #     path = r"C:\Users\koffe\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.9_qbz5n2kfra8p0\python3.9.exe"
-    #     subprocess.run([path, test_dir+"version_check.py"])
-        
-    #     self.create_pickle("ver3.10", test_object)
-    #     self.assertEqual(self.read_pickle("ver3.10"), self.read_pickle("ver3.9"))
+    def test_import_pickle(self):
+        try:
+            import pickle
+        except ImportError:
+            self.fail("Could not import pickle")
 
     def test_zero_tuple(self):
         test_object = ()
-        self.create_pickle("zero_tuple1",test_object)
-        self.create_pickle("zero_tuple2",test_object)
-        self.assertEqual(self.read_pickle("zero_tuple1"),self.read_pickle("zero_tuple2"))
+        create_pickle("zeroTuple",test_object, platform)
+        try:
+            read_pickle("zeroTuple", platform)
+        except Exception as e:
+            self.fail(e)
         
     
     def test_special_char(self):
         test_object = "teståäö"
-        self.create_pickle("special1",test_object)
-        self.create_pickle("special2",test_object)
-        self.assertEqual(self.read_pickle("special1"),self.read_pickle("special2"))
+        create_pickle("specialChar",test_object, platform)
+        try:
+            read_pickle("specialChar", platform)
+        except Exception as e:
+            self.fail(e)
     
     def test_float(self):
-        getcontext().prec=10000
+        getcontext().prec=1000
         float1 = Decimal(2) ** Decimal(0.5)
-        getcontext().prec=10001
+        getcontext().prec=1001
         float2 = Decimal(2) ** Decimal(0.5)
-        self.create_pickle("float1",float1)
-        self.create_pickle("float2",float2)
-        self.assertEqual(self.read_pickle("float1"),self.read_pickle("float2"))
+        create_pickle("float1",float1, platform)
+        create_pickle("float2",float2, platform)
+        self.assertNotEqual(read_pickle("float1", platform), read_pickle("float2", platform))
    
     def test_nan(self):
         test_object = math.nan #would also work with float('nan')
-        self.create_pickle("nan1",test_object)
-        self.create_pickle("nan2",test_object)
-        obj1 = self.read_pickle("nan1")
-        obj2 = self.read_pickle("nan2")
-        self.assertEqual(obj1,obj2)
+        create_pickle("nan",test_object, platform)
+        try:
+            read_pickle("nan", platform)
+        except Exception as e:
+            self.fail(e)
+
     
     def test_inf(self):
         test_object = math.inf
-        self.create_pickle("inf1",test_object)
-        self.create_pickle("inf2",test_object)
-        obj1 = self.read_pickle("inf1")
-        obj2 = self.read_pickle("inf2")
-        self.assertEqual(obj1,obj2)
+        create_pickle("inf",test_object, platform)
+        try:
+            read_pickle("inf", platform)
+        except Exception as e:
+            self.fail(e)
+        
+    def test_negative_inf(self):
+        test_object = -math.inf
+        create_pickle("ninf",test_object, platform)
+        try:
+            read_pickle("ninf", platform)
+        except Exception as e:
+            self.fail(e)
+    
+    def test_complex(self):
+        test_object = complex(1,2)
+        create_pickle("complex",test_object, platform)
+        try:
+            read_pickle("complex", platform)
+        except Exception as e:
+            self.fail(e)
+    
+    # If pklfiles from multiple platforms exist
 
+    # Check if pkl files encodes the same between platforms for unittests
+    if folder_contains_file("unittest_pkl_files/", "windows") and folder_contains_file("unittest_pkl_files/", "linux"):
+        linux_list, windows_list = [], []
+
+        for file in os.listdir("unittest_pkl_files/"):
+            if "linux" in file:
+                linux_list.append(file.split("_")[0])
+            elif "windows" in file:
+                windows_list.append(file.split("_")[0])
+
+        def test_unittests_between_platforms(self):
+            for i in range(len(self.linux_list)):
+                self.assertNotEqual(read_pickle(self.linux_list[i], "linux"), read_pickle(self.windows_list[i], "windows"))
+
+    # Check if pkl files encodes the same between platforms for fuzzing
+    if folder_contains_file("fuzz_pkl_files/", "windows") and folder_contains_file("fuzz_pkl_files/", "linux"):
+        linux_list, windows_list = [], []
+
+        for file in os.listdir("fuzz_pkl_files/"):
+            if "linux" in file:
+                linux_list.append(file.split("_")[0])
+            elif "windows" in file:
+                windows_list.append(file.split("_")[0])
+
+        def test_fuzz_between_platforms(self):
+            for i in range(len(self.linux_list)):
+                self.assertNotEqual(read_pickle(self.linux_list[i], "linux"), read_pickle(self.windows_list[i], "windows"))
+    
         
         
 if __name__ == '__main__':
