@@ -2,13 +2,13 @@ import pickle
 import hashlib
 import os
 
-def create_pickle(name, obj, platform):
-        with open("unittest_pkl_files/" + name + "_" + platform + ".pkl", "wb") as f:
+def create_pickle(name, obj, platform, path):
+        with open(path + name + "_" + platform + ".pkl", "wb") as f:
             pickle.dump(obj, f)
         
     
-def read_pickle(name, platform):
-    with open("unittest_pkl_files/" + name + "_" + platform + ".pkl", "rb") as f:
+def read_pickle(name, path):
+    with open(path + name, "rb") as f:
         temp_pick = f.read()
     hash = hashlib.sha256() #creates hash object
     hash.update(temp_pick) #insert obj into hash buffer
